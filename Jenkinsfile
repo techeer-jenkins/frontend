@@ -41,22 +41,25 @@ pipeline {
             steps { 
                 script { 
                     sh "docker build -t ${repository}:${IMAGE_TAG} ." // docker build
-
                 }
+                slackSend message: "Build Started - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
             } 
         }
+        
         stage('Login'){
             steps{
                 sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin" // docker hub 로그인
             }
         }
+
         stage('Deploy our image') { 
             steps { 
                 script {
-                    sh "docker push ${repository}:${IMAGE_TAG}"//docker push
+                    sh "docker push ${repository}:${IMAGE_TAG}" // docker push
                 } 
             }
         } 
+
         stage('Cleaning up') { 
             steps { 
                 sh "docker rmi ${repository}:${IMAGE_TAG}" // docker image 제거
@@ -67,10 +70,11 @@ pipeline {
     post {
         success {
             echo 'Build and deployment successful!'
+            slackSend message: "Build deployed successfully - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
         }
         failure {
             echo 'Build or deployment failed.'
+            slackSend failOnError: true, message: "Build failed  - ${env.JOB_NAME} ${env.BUILD_NUMBER} (<${env.BUILD_URL}|Open>)"
         }
     }
 }
-
